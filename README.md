@@ -49,7 +49,7 @@ Este projeto é a implementação do trabalho prático de Prog II, usando soment
   - Desenhar mapa e entidades com formas geométricas definidas no enunciado.
   - Desenhar o menu quando TAB estiver ativo, com as opções N/C/S/Q/V.
 
-## Como compilar e executar (macOS M1)
+## Como compilar e executar — macOS (M1)
 
 Pré-requisitos:
 
@@ -117,3 +117,49 @@ Resumo:
 ```
 
 Executa o binário compilado. A janela da Raylib é aberta e o loop do jogo roda com base nas funções implementadas em `src/`.
+
+## Como compilar e executar — Windows (MSYS2 + Raylib)
+
+Passos baseados na especificação do professor, usando MSYS2 no Windows.
+
+### 1. Instalar MSYS2 e pacotes
+
+1. Baixar e instalar MSYS2: <https://www.msys2.org/>  
+2. Abrir o terminal **MSYS2 UCRT64**.  
+3. Instalar GCC e Raylib:
+
+```bash
+pacman -S mingw-w64-ucrt-x86_64-gcc
+pacman -S mingw-w64-ucrt-x86_64-raylib
+```
+
+### 2. Clonar/copiar o projeto
+
+- Colocar a pasta `pacman` em algum diretório acessível pelo MSYS2, por exemplo:  
+  `C:/msys64/home/<usuario>/pacman`
+
+### 3. Compilar
+
+No terminal **MSYS2 UCRT64**, entrar na pasta do projeto:
+
+```bash
+cd ~/pacman
+gcc src/*.c -o pacman.exe -lraylib -lwinmm -lgdi32 -lopengl32
+```
+
+Explicando as libs extras:
+
+- `-lraylib` → biblioteca principal da Raylib (Windows).  
+- `-lwinmm` → multimídia do Windows (som, temporização).  
+- `-lgdi32` → interface gráfica (desenho em janelas).  
+- `-lopengl32` → implementação de OpenGL do Windows (renderização).
+
+### 4. Executar
+
+Ainda no mesmo terminal:
+
+```bash
+./pacman.exe
+```
+
+A janela do jogo abre no Windows. A lógica de código é a mesma para macOS e Windows; só muda a forma de instalar Raylib e as flags de compilação/linkedição.
