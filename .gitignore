@@ -1,0 +1,16 @@
+# Binários e artefatos de build
+pacman
+*.o
+*.out
+*.exe
+
+# Arquivos temporários do macOS / editor
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Arquivos de save do jogo (serão binários)
+*.sav
