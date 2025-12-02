@@ -21,6 +21,7 @@ typedef struct {
     Direction pendingDir;
     bool powered;
     float powerTimeLeft;
+    float moveTimer;
 } Pacman;
 
 typedef struct {
@@ -29,4 +30,5 @@ typedef struct {
     bool vulnerable;
     float vulnerableTimeLeft;
     bool alive;
+    float moveTimer;
 } Ghost;

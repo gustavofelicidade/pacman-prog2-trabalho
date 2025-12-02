@@ -10,6 +10,13 @@
 #define WINDOW_WIDTH (MAP_COLS * TILE_SIZE)
 #define WINDOW_HEIGHT (MAP_ROWS * TILE_SIZE + HUD_HEIGHT)
 #define PACMAN_START_LIVES 3
+#define PACMAN_SPEED_BLOCKS_PER_SEC 4.0f
+#define GHOST_SPEED_BLOCKS_PER_SEC 4.0f
+#define GHOST_SPEED_VULNERABLE 3.0f
+#define PACMAN_STEP_INTERVAL (1.0f / PACMAN_SPEED_BLOCKS_PER_SEC)
+#define GHOST_STEP_INTERVAL (1.0f / GHOST_SPEED_BLOCKS_PER_SEC)
+#define GHOST_STEP_INTERVAL_VULNERABLE (1.0f / GHOST_SPEED_VULNERABLE)
+#define POWER_MODE_DURATION 8.0f
 
 typedef struct GameState {
     Map map;
@@ -24,6 +31,7 @@ typedef struct GameState {
     bool paused;
     bool running;
     MenuState menu;
+    char currentMapPath[128];
 } GameState;
 
 bool game_init(GameState* game, const char* firstMapPath, int ghostCount);
