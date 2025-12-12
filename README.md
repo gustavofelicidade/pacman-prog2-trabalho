@@ -118,6 +118,8 @@ Resumo:
 
 Executa o binário compilado. A janela da Raylib é aberta e o loop do jogo roda com base nas funções implementadas em `src/`.
 
+- **Atalho útil:** pressione `F` a qualquer momento para alternar entre janela e tela cheia. Ao sair do fullscreen, a janela volta para o tamanho original (1600x840).
+
 ## Como compilar e executar — Windows (MSYS2 + Raylib)
 
 Passos baseados na especificação do professor, usando MSYS2 no Windows.

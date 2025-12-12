@@ -7,10 +7,18 @@ int main(void) {
         return 1;
     }
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pac-Man Prog II");
     SetTargetFPS(60);
 
     while (!WindowShouldClose() && game.running) {
+        if (IsKeyPressed(KEY_F)) {
+            ToggleFullscreen();
+            if (!IsWindowFullscreen()) {
+                SetWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+            }
+        }
+
         float dt = GetFrameTime();
         game_update(&game, dt);
 
