@@ -2,6 +2,10 @@
 #include "game.h"
 #include "raylib.h"
 #include <stdio.h>
+#include <math.h>
+
+static const Color WALL_COLOR = {0, 82, 204, 255};
+static const Color FLOOR_COLOR = {15, 15, 15, 255};
 
 static Rectangle tile_rect(int row, int col) {
     Rectangle r = {
@@ -23,18 +27,15 @@ static Vector2 tile_center(int row, int col) {
 
 static void draw_map_tiles(const GameState* game) {
     const Map* map = &game->map;
-    const Color wallColor = (Color){0, 82, 204, 255};
-    const Color floorColor = (Color){15, 15, 15, 255};
-
     for (int row = 0; row < map->rows; row++) {
         for (int col = 0; col < map->cols; col++) {
             char cell = map_get(map, row, col);
             Rectangle rect = tile_rect(row, col);
-            DrawRectangleRec(rect, floorColor);
+            DrawRectangleRec(rect, FLOOR_COLOR);
 
             switch (cell) {
                 case '#':
-                    DrawRectangleRec(rect, wallColor);
+                    DrawRectangleRec(rect, WALL_COLOR);
                     break;
                 case '.': {
                     Vector2 center = tile_center(row, col);
@@ -59,7 +60,74 @@ static void draw_map_tiles(const GameState* game) {
 static void draw_pacman(const Pacman* pacman) {
     Vector2 center = tile_center(pacman->pos.row, pacman->pos.col);
     Color color = pacman->powered ? GOLD : YELLOW;
-    DrawCircleV(center, (float)TILE_SIZE / 2.2f, color);
+    float radius = (float)TILE_SIZE / 2.2f;
+    DrawCircleV(center, radius, color);
+
+    Direction mouthDir = pacman->dir;
+    if (mouthDir == DIR_NONE) mouthDir = DIR_RIGHT;
+    float mouthAngle = 40.0f;
+    float centerAngle = 0.0f;
+    switch (mouthDir) {
+        case DIR_RIGHT: centerAngle = 0.0f; break;
+        case DIR_LEFT: centerAngle = 180.0f; break;
+        case DIR_UP: centerAngle = -90.0f; break;
+        case DIR_DOWN: centerAngle = 90.0f; break;
+        default: break;
+    }
+    float start = centerAngle - mouthAngle;
+    float end = centerAngle + mouthAngle;
+    float sectorStart = fmodf(start + 360.0f, 360.0f);
+    float sectorEnd = fmodf(end + 360.0f, 360.0f);
+    float delta = sectorEnd - sectorStart;
+    if (delta < 0) delta += 360.0f;
+    if (delta > 0) {
+        DrawCircleSector(center, radius + 1.0f, sectorStart, sectorStart + delta, 30, FLOOR_COLOR);
+    }
+
+    float eyeAngleDeg = centerAngle + 90.0f;
+    if (mouthDir == DIR_RIGHT || mouthDir == DIR_NONE) {
+        eyeAngleDeg = centerAngle - 90.0f;
+    }
+    float eyeAngleRad = eyeAngleDeg * PI / 180.0f;
+    Vector2 eyePos = {
+        center.x + cosf(eyeAngleRad) * radius * 0.4f,
+        center.y + sinf(eyeAngleRad) * radius * 0.4f
+    };
+    DrawCircleV(eyePos, radius * 0.15f, BLACK);
+}
+
+static void draw_ghost_shape(Vector2 center, bool vulnerable) {
+    Color base = vulnerable ? WHITE : RED;
+    float radius = (float)TILE_SIZE / 2.3f;
+    float headRadius = radius;
+    Vector2 headCenter = {center.x, center.y - radius * 0.2f};
+    DrawCircleV(headCenter, headRadius, base);
+
+    Rectangle body = {
+        .x = headCenter.x - headRadius,
+        .y = headCenter.y,
+        .width = headRadius * 2.0f,
+        .height = radius * 1.2f
+    };
+    DrawRectangleRec(body, base);
+
+    float waveRadius = headRadius / 3.0f;
+    for (int i = 0; i < 3; i++) {
+        Vector2 waveCenter = {
+            body.x + waveRadius + i * (waveRadius * 2.0f),
+            body.y + body.height - waveRadius
+        };
+        DrawCircleV(waveCenter, waveRadius, base);
+    }
+
+    Color eyeWhite = vulnerable ? (Color){200, 200, 200, 255} : RAYWHITE;
+    Color pupil = vulnerable ? (Color){100, 100, 100, 255} : DARKBLUE;
+    Vector2 leftEye = {center.x - headRadius * 0.35f, headCenter.y - headRadius * 0.2f};
+    Vector2 rightEye = {center.x + headRadius * 0.35f, headCenter.y - headRadius * 0.2f};
+    DrawCircleV(leftEye, headRadius * 0.3f, eyeWhite);
+    DrawCircleV(rightEye, headRadius * 0.3f, eyeWhite);
+    DrawCircleV((Vector2){leftEye.x + 4, leftEye.y}, headRadius * 0.15f, pupil);
+    DrawCircleV((Vector2){rightEye.x + 4, rightEye.y}, headRadius * 0.15f, pupil);
 }
 
 static void draw_ghosts(const GameState* game) {
@@ -68,8 +136,7 @@ static void draw_ghosts(const GameState* game) {
         const Ghost* ghost = &game->ghosts[i];
         if (!ghost->alive) continue;
         Vector2 center = tile_center(ghost->pos.row, ghost->pos.col);
-        Color color = ghost->vulnerable ? WHITE : RED;
-        DrawCircleV(center, (float)TILE_SIZE / 2.4f, color);
+        draw_ghost_shape(center, ghost->vulnerable);
     }
 }
 
