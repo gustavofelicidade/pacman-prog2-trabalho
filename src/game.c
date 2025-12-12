@@ -6,12 +6,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <math.h>
 
 #define SAVE_FILE_PATH "savegame.sav"
 #define RANKING_FILE_PATH "ranking.dat"
+#define DEFAULT_SAMPLE_RATE 22050
 
 static void return_to_title(GameState* game);
 static void open_ranking_screen(GameState* game);
+static bool init_audio_assets(GameState* game);
+static void unload_audio_assets(GameState* game);
+static void play_sound_safe(GameState* game, Sound sound);
 
 static void set_hud_message(GameState* game, const char* text, float duration) {
     if (!text) return;
@@ -93,6 +98,7 @@ static void trigger_end_state(GameState* game, bool victory) {
     game->pacman.dir = DIR_NONE;
     game->pacman.pendingDir = DIR_NONE;
     const char* msg = victory ? "Todos os niveis concluidos!" : "Game Over!";
+    play_sound_safe(game, victory ? game->winSound : game->loseLifeSound);
     int rankPos = ranking_position_for_score(&game->ranking, game->score);
     game->postPhase = victory ? GAME_PHASE_VICTORY : GAME_PHASE_GAMEOVER;
     if (rankPos >= 0) {
@@ -148,6 +154,7 @@ static void handle_tile(GameState* game) {
             game->score += 10;
             if (game->pelletsRemaining > 0) game->pelletsRemaining--;
             if (map->pelletsRemaining > 0) map->pelletsRemaining--;
+            play_sound_safe(game, game->pelletSound);
             break;
         case 'o':
             map_set(map, pac->pos.row, pac->pos.col, ' ');
@@ -155,6 +162,7 @@ static void handle_tile(GameState* game) {
             if (game->pelletsRemaining > 0) game->pelletsRemaining--;
             if (map->pelletsRemaining > 0) map->pelletsRemaining--;
             activate_power_mode(game);
+            play_sound_safe(game, game->powerSound);
             break;
         default:
             break;
@@ -172,6 +180,7 @@ static void handle_pacman_hit(GameState* game) {
         trigger_end_state(game, false);
         return;
     }
+    play_sound_safe(game, game->loseLifeSound);
     game->pacman.pos = game->map.pacmanStart;
     game->pacman.dir = DIR_NONE;
     game->pacman.pendingDir = DIR_NONE;
@@ -201,6 +210,7 @@ static void handle_collisions(GameState* game) {
             ghost->vulnerable = false;
             ghost->vulnerableTimeLeft = 0.0f;
             game->score += 100;
+            play_sound_safe(game, game->ghostSound);
         } else {
             handle_pacman_hit(game);
             return;
@@ -566,16 +576,24 @@ bool game_init(GameState* game, const char* firstMapPath, int ghostCount) {
 
     ranking_init(&game->ranking);
     ranking_load(&game->ranking, RANKING_FILE_PATH);
+    game->audioReady = false;
+    init_audio_assets(game);
 
     game->map = (Map){0};
-    (void)firstMapPath;
-    return true;
+    bool loaded = true;
+    if (firstMapPath) {
+        loaded = game_load_level(game, firstMapPath);
+        game->phase = GAME_PHASE_TITLE;
+        game->paused = true;
+    }
+    return loaded;
 }
 
 void game_shutdown(GameState* game) {
     free(game->ghosts);
     game->ghosts = NULL;
     map_free(&game->map);
+    unload_audio_assets(game);
 }
 
 void game_update(GameState* game, float dt) {
@@ -635,5 +653,68 @@ void game_draw(const GameState* game) {
                 render_menu(game);
             }
             break;
+    }
+}
+static Wave generate_tone_wave(float frequency, float duration, int sampleRate) {
+    int frameCount = (int)(duration * sampleRate);
+    if (frameCount <= 0) frameCount = sampleRate / 10;
+    short* data = (short*)malloc(sizeof(short) * frameCount);
+    if (!data) {
+        Wave empty = {0};
+        return empty;
+    }
+    const float amplitude = 0.4f;
+    for (int i = 0; i < frameCount; i++) {
+        float t = (float)i / (float)sampleRate;
+        float sample = sinf(2.0f * PI * frequency * t);
+        data[i] = (short)(amplitude * 32767.0f * sample);
+    }
+    Wave wave = {
+        .frameCount = (unsigned int)frameCount,
+        .sampleRate = (unsigned int)sampleRate,
+        .sampleSize = 16,
+        .channels = 1,
+        .data = data
+    };
+    return wave;
+}
+
+static Sound make_tone_sound(float frequency, float duration) {
+    Wave wave = generate_tone_wave(frequency, duration, DEFAULT_SAMPLE_RATE);
+    Sound sound = {0};
+    if (wave.data) {
+        sound = LoadSoundFromWave(wave);
+        UnloadWave(wave);
+    }
+    return sound;
+}
+
+static bool init_audio_assets(GameState* game) {
+    if (!IsAudioDeviceReady()) {
+        game->audioReady = false;
+        return false;
+    }
+    game->pelletSound = make_tone_sound(880.0f, 0.08f);
+    game->powerSound = make_tone_sound(523.0f, 0.25f);
+    game->ghostSound = make_tone_sound(660.0f, 0.3f);
+    game->loseLifeSound = make_tone_sound(200.0f, 0.4f);
+    game->winSound = make_tone_sound(440.0f, 0.5f);
+    game->audioReady = true;
+    return true;
+}
+
+static void unload_audio_assets(GameState* game) {
+    if (!game->audioReady) return;
+    UnloadSound(game->pelletSound);
+    UnloadSound(game->powerSound);
+    UnloadSound(game->ghostSound);
+    UnloadSound(game->loseLifeSound);
+    UnloadSound(game->winSound);
+    game->audioReady = false;
+}
+
+static void play_sound_safe(GameState* game, Sound sound) {
+    if (game->audioReady) {
+        PlaySound(sound);
     }
 }

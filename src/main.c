@@ -2,14 +2,17 @@
 #include "raylib.h"
 
 int main(void) {
-    GameState game;
-    if (!game_init(&game, "assets/maps/mapa1.txt", 4)) {
-        return 1;
-    }
-
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Pac-Man Prog II");
+    InitAudioDevice();
     SetTargetFPS(60);
+
+    GameState game;
+    if (!game_init(&game, "assets/maps/mapa1.txt", 4)) {
+        CloseAudioDevice();
+        CloseWindow();
+        return 1;
+    }
 
     while (!WindowShouldClose() && game.running) {
         if (IsKeyPressed(KEY_F)) {
@@ -28,7 +31,8 @@ int main(void) {
         EndDrawing();
     }
 
-    CloseWindow();
     game_shutdown(&game);
+    CloseAudioDevice();
+    CloseWindow();
     return 0;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include "raylib.h"
 #include "map.h"
 #include "entity.h"
 #include "menu.h"
@@ -54,6 +55,12 @@ typedef struct GameState {
     int pendingRankingIndex;
     char nameEntry[RANKING_NAME_LEN];
     int nameEntryLen;
+    bool audioReady;
+    Sound pelletSound;
+    Sound powerSound;
+    Sound ghostSound;
+    Sound loseLifeSound;
+    Sound winSound;
 } GameState;
 
 bool game_init(GameState* game, const char* firstMapPath, int ghostCount);
