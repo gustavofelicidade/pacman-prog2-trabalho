@@ -211,6 +211,9 @@ bool load_game(GameState* game, const char* path) {
 
     game->running = true;
     game->paused = false;
+    game->phase = GAME_PHASE_PLAYING;
+    game->hudMessage[0] = '\0';
+    game->hudMessageTimer = 0.0f;
     game->menu.status = MENU_HIDDEN;
     game->menu.pendingAction = MENU_ACTION_NONE;
     game->menu.selectedIndex = 0;

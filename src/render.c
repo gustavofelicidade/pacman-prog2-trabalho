@@ -91,6 +91,91 @@ static void draw_hud(const GameState* game) {
 
     snprintf(text, sizeof(text), "Pellets: %d/%d", game->pelletsRemaining, game->map.pelletsInitial);
     DrawText(text, 520, (int)hudY + 10, 18, RAYWHITE);
+
+    if (game->hudMessageTimer > 0.0f && game->hudMessage[0] != '\0') {
+        DrawText(game->hudMessage, 820, (int)hudY + 10, 18, YELLOW);
+    }
+}
+
+static void draw_end_overlay(const GameState* game) {
+    GamePhase overlayPhase = game->phase;
+    if (overlayPhase == GAME_PHASE_ENTER_SCORE) {
+        overlayPhase = game->postPhase;
+    }
+    if (overlayPhase != GAME_PHASE_VICTORY && overlayPhase != GAME_PHASE_GAMEOVER) return;
+    DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, Fade(BLACK, 0.75f));
+    const char* title = (overlayPhase == GAME_PHASE_VICTORY) ? "Vitoria!" : "Game Over";
+    const char* subtitle = (overlayPhase == GAME_PHASE_VICTORY)
+        ? "N: Novo jogo  R: Ranking  Q: Sair"
+        : "N: Reiniciar  R: Ranking  Q: Sair";
+    int titleWidth = MeasureText(title, 48);
+    int subWidth = MeasureText(subtitle, 24);
+    int centerX = WINDOW_WIDTH / 2;
+    DrawText(title, centerX - titleWidth / 2, WINDOW_HEIGHT / 2 - 60, 48, GOLD);
+    DrawText(subtitle, centerX - subWidth / 2, WINDOW_HEIGHT / 2, 24, RAYWHITE);
+}
+
+static void render_name_entry_overlay(const GameState* game) {
+    if (game->phase != GAME_PHASE_ENTER_SCORE) return;
+    DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, Fade(BLACK, 0.8f));
+    const char* title = "Novo recorde!";
+    char scoreText[64];
+    snprintf(scoreText, sizeof(scoreText), "Pontuacao: %06d", game->pendingRankingScore);
+    const char* hint = "Digite seu nome e pressione ENTER (ESC para ignorar)";
+    int centerX = WINDOW_WIDTH / 2;
+    int y = WINDOW_HEIGHT / 2 - 80;
+    int titleWidth = MeasureText(title, 42);
+    DrawText(title, centerX - titleWidth / 2, y, 42, GOLD);
+    DrawText(scoreText, centerX - MeasureText(scoreText, 24) / 2, y + 60, 24, RAYWHITE);
+    DrawText(hint, centerX - MeasureText(hint, 20) / 2, y + 100, 20, LIGHTGRAY);
+
+    Rectangle inputRect = {
+        .x = (float)(centerX - 200),
+        .y = (float)(y + 140),
+        .width = 400.0f,
+        .height = 50.0f
+    };
+    DrawRectangleRec(inputRect, (Color){20, 20, 20, 255});
+    DrawRectangleLinesEx(inputRect, 2.0f, GOLD);
+    const char* name = (game->nameEntryLen > 0) ? game->nameEntry : "_";
+    DrawText(name, centerX - MeasureText(name, 28) / 2, (int)inputRect.y + 10, 28, RAYWHITE);
+}
+
+void render_title_screen(const GameState* game) {
+    (void)game;
+    const char* title = "PAC-MAN Prog II";
+    const char* subtitle = "Trabalho Pratico - Turma 2025/2";
+    int centerX = WINDOW_WIDTH / 2;
+    int titleWidth = MeasureText(title, 48);
+    DrawText(title, centerX - titleWidth / 2, 160, 48, YELLOW);
+    DrawText(subtitle, centerX - MeasureText(subtitle, 20) / 2, 220, 20, LIGHTGRAY);
+
+    const char* options[] = {
+        "[N] Novo jogo",
+        "[C] Carregar jogo salvo",
+        "[R] Ver ranking",
+        "[Q] Sair"
+    };
+    for (int i = 0; i < 4; i++) {
+        DrawText(options[i], centerX - 160, 300 + i * 40, 24, RAYWHITE);
+    }
+}
+
+void render_ranking_screen(const GameState* game) {
+    DrawRectangle(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, Fade(BLACK, 0.7f));
+    const char* title = "Ranking de Pontuacoes";
+    int centerX = WINDOW_WIDTH / 2;
+    DrawText(title, centerX - MeasureText(title, 36) / 2, 80, 36, GOLD);
+
+    for (int i = 0; i < RANKING_MAX_ENTRIES; i++) {
+        const RankingEntry* entry = &game->ranking.entries[i];
+        char line[64];
+        snprintf(line, sizeof(line), "%2d. %-10s %6d", i + 1, entry->name, entry->score);
+        DrawText(line, centerX - 150, 150 + i * 28, 24, RAYWHITE);
+    }
+
+    const char* hint = "[ESC] Voltar  [N] Novo jogo  [Q] Sair";
+    DrawText(hint, centerX - MeasureText(hint, 20) / 2, WINDOW_HEIGHT - 80, 20, LIGHTGRAY);
 }
 
 void render_game(const GameState* game) {
@@ -98,6 +183,8 @@ void render_game(const GameState* game) {
     draw_pacman(&game->pacman);
     draw_ghosts(game);
     draw_hud(game);
+    draw_end_overlay(game);
+    render_name_entry_overlay(game);
 }
 
 void render_menu(const GameState* game) {

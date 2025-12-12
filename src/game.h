@@ -4,6 +4,7 @@
 #include "map.h"
 #include "entity.h"
 #include "menu.h"
+#include "ranking.h"
 
 #define TILE_SIZE 40
 #define HUD_HEIGHT 40
@@ -17,6 +18,16 @@
 #define GHOST_STEP_INTERVAL (1.0f / GHOST_SPEED_BLOCKS_PER_SEC)
 #define GHOST_STEP_INTERVAL_VULNERABLE (1.0f / GHOST_SPEED_VULNERABLE)
 #define POWER_MODE_DURATION 8.0f
+#define HUD_MESSAGE_TIME 2.5f
+
+typedef enum {
+    GAME_PHASE_TITLE = 0,
+    GAME_PHASE_PLAYING,
+    GAME_PHASE_VICTORY,
+    GAME_PHASE_GAMEOVER,
+    GAME_PHASE_RANKING,
+    GAME_PHASE_ENTER_SCORE
+} GamePhase;
 
 typedef struct GameState {
     Map map;
@@ -32,6 +43,17 @@ typedef struct GameState {
     bool running;
     MenuState menu;
     char currentMapPath[128];
+    GamePhase phase;
+    GamePhase postPhase;
+    char hudMessage[96];
+    float hudMessageTimer;
+    Ranking ranking;
+    bool rankingLoaded;
+    bool rankingDirty;
+    int pendingRankingScore;
+    int pendingRankingIndex;
+    char nameEntry[RANKING_NAME_LEN];
+    int nameEntryLen;
 } GameState;
 
 bool game_init(GameState* game, const char* firstMapPath, int ghostCount);
